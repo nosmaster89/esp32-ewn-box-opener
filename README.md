@@ -52,7 +52,12 @@ If you have different board then T-Display-S3 you should change it in platformio
 platform = espressif32
 board = lilygo-t-display-s3
 ```
-
+For the old T-Display boards:
+``````
+[env:lilygo-t-display]
+platform = espressif32
+board = lilygo-t-display
+``````
 Compile and upload to your board (click the right arrow button on bottom strip of the VSCode).
 
 ## Running.
@@ -80,16 +85,20 @@ waiting 10s for next batch...
 ✅ Guesses accepted
 waiting 10s for next batch...
 ```
-## Problems
-If the code does not run on your esp32 board (you see a repeating wall of text in serial terminal at the 115200 baudrate) try disabling the platform_packages in platformio.ini file
+## Problems.
+### 1. If the code does not run on your esp32 board.
+
+You see a repeating wall of text in serial terminal at the 115200 baudrate) try enabling the platform_packages in platformio.ini file
 ```
-;platform_packages = platformio/framework-arduinoespressif32@3.20008.0
+platform_packages = platformio/framework-arduinoespressif32@3.20008.0
 ```
+This fix worked for T-Display-S3 board, it will probably not work for others. 
+
 I had a problem when compiling the code on different computer.
-
 It turned out that the code compiled with newer version of the framework caused guru meditation errors on the esp32 I have.
+So I had to force the framework version to a specific one which worked.
 
-So I had to force the framework version which worked.
+### 2. If you have "Unknown board ID" error after changing board type in platformio.ini
+Reset your boards by deleting the ".platformio/platforms" folder (on Windows it is located in user directory)
 
-Maybe you will have to choose different version. I have no idea where to look for them :]
-
+More info there: https://www.luisllamas.es/en/plaftormio-unknown-board-id/

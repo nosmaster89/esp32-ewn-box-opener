@@ -13,7 +13,7 @@ This is a work in progress. There are more features to be added (like GUI to set
 But for now it should just work.
 
 ## Importing project.
-**The simplest way is to have VSCode (Visual Studio Code editor) installed with PlatformIO extension on your computer.**
+**The easiest way to import is to have VSCode (Visual Studio Code editor) installed with PlatformIO extension on your computer.**
 
 Download whole repository to your disk (the green "Code" button somewhere in upper right-> Download ZIP).
 

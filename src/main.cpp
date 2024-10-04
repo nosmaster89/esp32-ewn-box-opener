@@ -5,7 +5,7 @@
  * Author: Crey
  * Repository: https://github.com/cr3you/esp32-ewn-box-opener/
  * Date: 2024.10.04 
- * Version: 1.0.0
+ * Version: 1.0.1
  * License: MIT
  * ------------------------------------------------------------------------
  */
@@ -129,7 +129,14 @@ bool submitGuesses(String *mnemonics, const String &apiUrl, const String &apiKey
 //====== main loop ====
 void loop()
 {
-
+  //--- reconnect wifi if it is not connected by some reason
+  if (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print("WiFi disconnected, trying to reconnect..\n");
+    WiFi.disconnect();
+    WiFi.reconnect();
+  }
+    
   Serial.println("⚙️ Generating guesses...");
 
   generateMnemonics(mnemonics);

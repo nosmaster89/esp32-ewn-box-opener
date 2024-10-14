@@ -4,7 +4,7 @@
  * Description: Esp32 port of the Box Opener client for mining EWN tokens.
  * Author: Crey
  * Repository: https://github.com/cr3you/esp32-ewn-box-opener/
- * Date: 2024.10.04 
+ * Date: 2024.10.04
  * Version: 1.0.1
  * License: MIT
  * ------------------------------------------------------------------------
@@ -16,25 +16,37 @@
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
+#include <Adafruit_NeoPixel.h>
 
+#define NUMPIXELS 1
+#define DELAYVAL 500
+#define BRIGHTNESS 120
+
+#define PIN 48 // 48 on the esp32s3 usbC devboard
 //=====wifi setup
-const char *ssid = "YOUR_WIFI_SSID"; // <---------------------- SET THIS !!!
-const char *password = "YOUR_WIFI_PASSWORD"; // <-------------- SET THIS !!!
+const char *ssid = "SSID";         // <---------------------- SET THIS !!!
+const char *password = "PASSWORD"; // <-------------- SET THIS !!!
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 //=====Box Opener client setup
 const char *apiUrl = "https://api.erwin.lol/"; // mainnet
-//const char *apiUrl = "https://devnet-api.erwin.lol/"; // devnet
-const char *apiKey = "YOUR_API_KEY"; // <---------------------- SET THIS !!!
-
+// const char *apiUrl = "https://devnet-api.erwin.lol/"; // devnet
+const char *apiKey = ""; // <---------------------- SET THIS !!!
 
 const int numGuesses = 50;
 String mnemonics[numGuesses]; // bip39 mnemonic table
-int sleepTime = 10000; // default sleep time in ms
+int sleepTime = 10000;        // default sleep time in ms
 
+void blinkPixels(int color); // Forward declaration
+void lightPixels(int color); // Forward declaration
 void setup()
 {
   Serial.begin(115200);
+  pixels.begin();
+  // set all pixels to red
+  pixels.clear();
 
+  lightPixels(pixels.Color(BRIGHTNESS, 0, 0));
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(100);
@@ -42,17 +54,22 @@ void setup()
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   Serial.print("Connecting to WiFi ..");
+
   while (WiFi.status() != WL_CONNECTED)
   {
     Serial.print('.');
     delay(1000);
   }
+  // blink the pixels to green
+  blinkPixels(pixels.Color(0, 0, BRIGHTNESS));
+
   Serial.println();
   Serial.println(WiFi.localIP()); // print local IP
 
   Serial.printf("===============\n");
   Serial.printf("Box-opener started\n");
 
+  pixels.clear();
 }
 
 //===== generate table of 50 bip39 12-word mnemonics
@@ -71,7 +88,25 @@ void generateMnemonics(String *mnemonics)
     // Serial.printf("Generated mnemonic: %s\n", mnemonics[i].c_str());
   }
 }
-
+void lightPixels(int color)
+{
+  for (int i = 0; i < NUMPIXELS; i++)
+  {
+    pixels.setPixelColor(i, color);
+  }
+  pixels.show();
+}
+void blinkPixels(int color)
+{
+  for (int i = 0; i < NUMPIXELS; i++)
+  {
+    pixels.setPixelColor(i, color);
+    pixels.show();
+    delay(DELAYVAL);
+    pixels.clear();
+    pixels.show();
+  }
+}
 //===== submit mnemonics to Oracle
 bool submitGuesses(String *mnemonics, const String &apiUrl, const String &apiKey)
 {
@@ -103,23 +138,28 @@ bool submitGuesses(String *mnemonics, const String &apiUrl, const String &apiKey
     if (httpResponseCode == 202)
     {
       Serial.println("✅ Guesses accepted");
+      // make the pixels green
+      blinkPixels(pixels.Color(0, BRIGHTNESS, 0));
       ret = false;
     }
     else if (httpResponseCode == 404) // "Closed Box Not Found"
     {
       Serial.printf("❌ Guesses rejected (%d): %s\n", httpResponseCode, response.c_str());
       ret = false;
+      blinkPixels(pixels.Color(102, 0, 255));
     }
     else // other errors
     {
       Serial.printf("❌ Guesses rejected (%d): %s\n", httpResponseCode, response.c_str());
       ret = true;
+      blinkPixels(pixels.Color(BRIGHTNESS, 0, 0));
     }
   }
   else // even more other errors :V maybe do a reconnect?
   {
     Serial.printf("❌ Error in HTTP request: %s\n", http.errorToString(httpResponseCode).c_str());
     ret = true;
+    blinkPixels(pixels.Color(BRIGHTNESS, 0, 0));
   }
 
   http.end();
@@ -136,7 +176,7 @@ void loop()
     WiFi.disconnect();
     WiFi.reconnect();
   }
-    
+
   Serial.println("⚙️ Generating guesses...");
 
   generateMnemonics(mnemonics);
@@ -161,6 +201,7 @@ void loop()
     sleepTime = 60000;
   }
 
-  Serial.printf("waiting %is for next batch...\n", sleepTime/1000);
-  delay(sleepTime);
+  Serial.printf("waiting %is for next batch...\n", sleepTime / 1000);
+  pixels.clear();
+  delay(sleepTime - DELAYVAL);
 }
